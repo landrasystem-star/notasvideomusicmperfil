@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Bloc de Notas Cloud + TV Música | 200+ Canales</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            background: #1a1a2e;
+            color: #eee;
+        }
+        body.dark-mode .config-panel,
+        body.dark-mode .nota-form,
+        body.dark-mode .nota-card,
+        body.dark-mode .tv-panel {
+            background: #2d2d44;
+            color: #eee;
+        }
+        body.dark-mode .nota-titulo {
+            color: #eee;
+        }
+        body.dark-mode .nota-contenido {
+            color: #ccc;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+            width: 100%;
+        }
+        .header { text-align: center; color: white; margin-bottom: 20px; }
+        .config-panel, .nota-form, .tv-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: background 0.3s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.02); background: #764ba2; }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .notas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+        .nota-card {
+            background: white;
+            padding: 18px;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s, background 0.3s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .nota-card:hover { transform: translateY(-3px); }
+        .nota-titulo {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            padding-left: 12px;
+        }
+        .nota-contenido {
+            color: #555;
+            margin-bottom: 12px;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+        .nota-contenido a {
+            color: #667eea;
+            text-decoration: none;
+            border-bottom: 1px solid #667eea;
+        }
+        .nota-fecha { font-size: 0.75em; color: #999; margin-top: 12px; }
+        .btn-eliminar { background: #dc3545; padding: 8px 16px; font-size: 13px; margin-top: 8px; }
+        
+        /* TV */
+        .tv-player {
+            width: 100%;
+            height: 250px;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            touch-action: none; /* Para evitar scroll en móviles */
+        }
+        .tv-player video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .tv-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .tv-select, .tv-category {
+            flex: 1;
+            margin-bottom: 0;
+        }
+        .now-playing {
+            padding: 8px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .gesto-indicator {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            z-index: 1000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        .sync-dot { width: 10px; height: 10px; border-radius: 50%; background: #28a745; }
+        .sync-dot.syncing { background: #ffc107; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .empty-state { text-align: center; color: white; padding: 50px; background: rgba(255,255,255,0.1); border-radius: 20px; }
+        footer { text-align: center; margin-top: 30px; color: white; opacity: 0.7; font-size: 12px; }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px !important; }
+            .container { width: 100% !important; padding: 0 !important; margin: 0 auto !important; }
+            .tv-player { height: 200px; }
+            .notas-grid { grid-template-columns: 1fr !important; width: 100% !important; gap: 15px !important; }
+            .nota-card { padding: 12px !important; margin: 0 !important; width: 100% !important; box-sizing: border-box !important; }
+            .nota-titulo { font-size: 1em !important; }
+            .nota-contenido { font-size: 13px !important; line-height: 1.4 !important; word-break: break-word !important; }
+            .nota-contenido a { font-size: 13px !important; word-break: break-all !important; }
+            .nota-fecha { font-size: 10px !important; }
+            .btn-eliminar { padding: 6px 12px !important; font-size: 12px !important; }
+            .config-panel, .nota-form, .tv-panel { padding: 15px !important; margin-bottom: 15px !important; width: 100% !important; box-sizing: border-box !important; }
+            input, textarea, select { font-size: 14px !important; padding: 10px !important; width: 100% !important; box-sizing: border-box !important; }
+            .btn-group button { font-size: 13px !important; padding: 8px 12px !important; }
+            .gesto-indicator { display: block; font-size: 10px !important; padding: 6px 12px !important; white-space: nowrap !important; bottom: 70px !important; }
+            .sync-indicator { top: auto; bottom: 20px; right: 10px; font-size: 10px; padding: 5px 10px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📝 Bloc de Notas Cloud + 📺 TV Música</h1>
+        <p>Sube imágenes a Imgur | Modo oscuro | Exportación a HTML | 🖱️ Desliza para cambiar canal | 200+ Canales</p>
+    </div>
+
+    <div class="config-panel">
+        <h3>⚙️ Configuración de GitHub</h3>
+        <div class="config-group">
+            <label>🔑 GitHub Token:</label>
+            <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off">
+        </div>
+        <div class="config-group">
+            <label>📁 ID del Gist:</label>
+            <input type="text" id="gistId" placeholder="Déjalo vacío para crear uno nuevo">
+        </div>
+        <div class="btn-group">
+            <button class="btn-sync" onclick="guardarConfiguracion()">💾 Guardar</button>
+            <button onclick="sincronizarDesdeGitHub()">📥 Traer desde GitHub</button>
+            <button onclick="subirAGitHub()">📤 Subir a GitHub</button>
+            <button onclick="toggleModoOscuro()" style="background: #6c757d;">🌙 Modo oscuro</button>
+        </div>
+        <div id="statusMessage" class="status info">✅ Listo</div>
+    </div>
+
+    <div class="tv-panel">
+        <h3>📺 Canales de Música Online (200+ canales)</h3>
+        <div class="tv-player">
+            <video id="tvPlayer" controls playsinline></video>
+        </div>
+        <div class="tv-controls">
+            <select id="tvChannel" class="tv-select" onchange="cambiarCanalPorSelect()">
+                <option value="">-- Selecciona un canal --</option>
+            </select>
+            <select id="tvCategory" class="tv-category" onchange="filtrarCanalesTV()">
+                <option value="Todos">Todas las categorías</option>
+            </select>
+            <button onclick="detenerTV()" style="background:#dc3545;">⏹️ Detener</button>
+        </div>
+        <div class="now-playing" id="nowPlayingTV">
+            🎵 Selecciona un canal para empezar
+        </div>
+    </div>
+
+    <div class="nota-form">
+        <input type="text" id="titulo" placeholder="📌 Título">
+        <textarea id="contenido" placeholder="✍️ Escribe aquí... (los enlaces serán clicables)"></textarea>
+        <div class="btn-group">
+            <button onclick="guardarNota()">💾 Guardar Nota</button>
+            <button onclick="pegarYCerrar()" style="background: #17a2b8;">📋 Pegar, guardar y cerrar</button>
+            <button onclick="cerrarVentana()" style="background: #6c757d;">❌ Cerrar</button>
+            <button onclick="subirImagen()" style="background: #28a745;">🖼️ Subir imagen (Imgur)</button>
+            <button onclick="exportarHTML()" style="background: #dc3545;">📄 Exportar a HTML</button>
+            <button onclick="abrirRadio()" style="background: #ff9800; color: #000; font-weight: bold;">📻 Radio</button>
+        </div>
+    </div>
+
+    <div id="notas-container" class="notas-grid"></div>
+    <footer>🔗 Usa: ?perfil=NOMBRE&token=TOKEN&gist=GIST_ID | 🌙 Modo oscuro | 📺 200+ canales musicales | 🖱️ Desliza para cambiar canal</footer>
+</div>
+
+<div class="gesto-indicator" id="gestoIndicator">
+    👉 Desliza izquierda/derecha para cambiar canal 👈
+</div>
+
+<div class="sync-indicator">
+    <div class="sync-dot" id="syncDot"></div>
+    <span id="syncStatus">Local</span>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+    // =======================================================================
+    // 1. LECTURA DE PARÁMETROS DE LA URL (perfil, token, gist)
+    // =======================================================================
+    function getParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    const perfilActual = getParam('perfil') || '';
+    const prefijo = perfilActual ? perfilActual + '_' : '';
+
+    // =======================================================================
+    // 2. LISTA DE CANALES (200+ canales)
+    // =======================================================================
+    const canalesTV = [
+        // === CANALES ORIGINALES (48) ===
+        { nombre: "🎵 Sol Música España", url: "https://d2glyu450vvghm.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-21u4g5cjglv02/sm.m3u8", categoria: "España" },
+        { nombre: "🎸 Activa TV España", url: "https://streamtv.mediasector.es/hls/activatv/index.m3u8", categoria: "España" },
+        { nombre: "🎤 Molahits TV España", url: "https://ventdelnord.tv:8080/mola/directe.m3u8", categoria: "España" },
+        { nombre: "💃 Verbena TV España", url: "https://streamtv2.elitecomunicacion.cloud:3144/live/verbenatvlive.m3u8", categoria: "España" },
+        { nombre: "🎧 Cadena Elite España", url: "https://cloudvideo.servers10.com:8081/8004/index.m3u8", categoria: "España" },
+        { nombre: "🔊 Spektra TV España", url: "https://cloudvideo.servers10.com:8081/8026/tracks-v1a1/index.m3u8", categoria: "España" },
+        { nombre: "🎵 30A Music USA", url: "https://30a-tv.com/feeds/ceftech/30atvmusic.m3u8", categoria: "Internacional" },
+        { nombre: "🎸 Ditty TV USA", url: "https://0ba805a2403b4660bbb05c0a210ebbdc.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/ONO_DittyTV/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "🎹 Spirit TV USA", url: "https://cdnlive.myspirit.tv/LS-ATL-43240-2/index.m3u8", categoria: "Internacional" },
+        { nombre: "🎵 Kronehit Austria", url: "https://bitcdn-kronehit.bitmovin.com/v2/hls/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "🎶 QMusic Países Bajos", url: "https://stream.qmusic.nl/qmusic/videohls.m3u8", categoria: "Internacional" },
+        { nombre: "🎸 Ocko Chequia", url: "https://ocko-live.ssl.cdn.cra.cz/channels/ocko/playlist/cze/live_hq.m3u8", categoria: "Internacional" },
+        { nombre: "⭐ Star Chequia", url: "https://ocko-live.ssl.cdn.cra.cz/channels/ocko_gold/playlist/cze/live_hq.m3u8", categoria: "Internacional" },
+        { nombre: "⚡ Expres Chequia", url: "https://ocko-live.ssl.cdn.cra.cz/channels/ocko_expres/playlist/cze/live_hq.m3u8", categoria: "Internacional" },
+        { nombre: "📻 Retro Music TV Chequia", url: "http://stream.mediawork.cz/retrotv/retrotvHQ1/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "🎤 4FUN TV Polonia", url: "https://stream.4fun.tv:8888/hls/4f_high/index.m3u8", categoria: "Internacional" },
+        { nombre: "🎵 Number1 FM Turquía", url: "https://b01c02nl.mediatriple.net/videoonlylive/mtkgeuihrlfwlive/broadcast_5c9e17cd59e8b.smil/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "🎧 Power TV Turquía", url: "https://livetv.powerapp.com.tr/powerTV/powerhd.smil/playlists.m3u8", categoria: "Internacional" },
+        { nombre: "🎸 NRG91 Grecia", url: "http://tv.nrg91.gr:1935/onweb/live/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "🎵 CMC Croacia", url: "https://stream.cmctv.hr:49998/cmc/live.m3u8", categoria: "Internacional" },
+        { nombre: "🎤 Sky Folk Macedonia", url: "https://eu.live.skyfolk.mk/live.m3u8", categoria: "Internacional" },
+        { nombre: "🎶 1Muz Bielorrusia HD", url: "http://hz1.teleport.cc/HLS/HD.m3u8", categoria: "Internacional" },
+        { nombre: "🎶 1Muz Bielorrusia SD", url: "http://hz1.teleport.cc/HLS/SD.m3u8", categoria: "Internacional" },
+        { nombre: "🎧 Dance TV Estonia 1", url: "https://m1b2.worldcast.tv/dancetelevisionone/2/dancetelevisionone.m3u8", categoria: "Dance" },
+        { nombre: "🎧 Dance TV Estonia 2", url: "https://m1b2.worldcast.tv/dancetelevisiontwo/2/dancetelevisiontwo.m3u8", categoria: "Dance" },
+        { nombre: "🎧 Dance TV Estonia 3", url: "https://m2b2.worldcast.tv:7443/dancetelevisionthree/2/dancetelevisionthree.m3u8", categoria: "Dance" },
+        { nombre: "🎧 Dance TV Estonia 4", url: "https://m2b2.worldcast.tv:7443/dancetelevisionfour/2/dancetelevisionfour.m3u8", categoria: "Dance" },
+        { nombre: "🎧 Dance TV Estonia 5", url: "https://m2b2.worldcast.tv:7443/dancetelevisionfive/2/dancetelevisionfive.m3u8", categoria: "Dance" },
+        { nombre: "🎧 V2Beat TV", url: "https://abr.de1se01.v2beat.live/playlist.m3u8", categoria: "Dance" },
+        { nombre: "🎵 Radio Italia TV", url: "https://radioitaliatv.akamaized.net/hls/live/2093117/RadioitaliaTV/master.m3u8", categoria: "Italia" },
+        { nombre: "🎵 RDS Social TV Italia", url: "https://stream.rdstv.radio/index.m3u8", categoria: "Italia" },
+        { nombre: "🎵 m2o Italia", url: "https://4c4b867c89244861ac216426883d1ad0.msvdn.net/live/S62628868/uhdWBlkC1AoO/playlist.m3u8", categoria: "Italia" },
+        { nombre: "🎵 Radio Capital Italia", url: "https://4c4b867c89244861ac216426883d1ad0.msvdn.net/live/S35394734/Z6U2wGoDYANk/playlist.m3u8", categoria: "Italia" },
+        { nombre: "🎸 70-80's Italia", url: "https://585b674743bbb.streamlock.net/9050/9050/playlist.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL 102.5 Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL Freccia Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S3160845/0tuSetc8UFkF/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL Zeta Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S9346184/XEx1LqlYbNic/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL Best Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S76960628/OEPHRUIctA0M/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL Disco Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S51100361/0Fb4R3k82b5Z/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL Caliente Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S8448465/zTYa1Z5Op9ue/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL Bro&Sis Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S75007890/MUGHuxc9dQ3b/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "🎤 RTL Napulè Italia", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S27134503/0f9AhuwKlhnZ/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "💃 VM Latino Costa Rica", url: "https://59ef525c24caa.streamlock.net/vmtv/vmlatino/playlist.m3u8", categoria: "Latino" },
+        { nombre: "🎵 Venus Media Paraguay", url: "https://tigocloud.desdeparaguay.net/venusmedia/venusmedia/playlist.m3u8", categoria: "Latino" },
+        { nombre: "🎵 Retro Plus Chile", url: "https://scl.edge.grupoz.cl/retroplustvuno/live/playlist.m3u8", categoria: "Latino" },
+        { nombre: "🎵 Portal Foxmix Chile", url: "https://panel.tvstream.cl:1936/8040/8040/playlist.m3u8", categoria: "Latino" },
+        { nombre: "🎵 La Mega Mundial USA", url: "https://server40.servistreaming.com:3477/stream/play.m3u8", categoria: "Latino" },
+        { nombre: "💃 Tropical Moon TV", url: "https://stream-us-east-1.getpublica.com/playlist.m3u8?network_id=16185&live=1", categoria: "Latino" },
+
+        // === NUEVOS CANALES (MÁS DE 150) ===
+        { nombre: "7 RadioVisione", url: "https://stream10.xdevel.com/video1s976543-1932/stream/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "7 YOU & ME", url: "https://stream10.xdevel.com/video0s977798-2239/stream/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "9XM", url: "https://9xjio.wiseplayout.com/9XM/master.m3u8", categoria: "Internacional" },
+        { nombre: "15+ Music", url: "https://live.15plusmg.ru/memfs/ce3366b1-bf25-4e24-96bb-1adf0d44bd3d.m3u8", categoria: "Internacional" },
+        { nombre: "70-80 TV", url: "https://585b674743bbb.streamlock.net/9050/9050/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "A2i Music", url: "https://stream.sen-gt.com/A2iMusic/myStream/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "AE Radio TV", url: "https://tls-cl.cdnz.cl/aeradio/live/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Atomic Academy TV", url: "https://atomic.streamnet.ro/academia.m3u8", categoria: "Internacional" },
+        { nombre: "Atomic TV", url: "https://atomic.streamnet.ro/atomictv.m3u8", categoria: "Internacional" },
+        { nombre: "Avang TV", url: "https://hls.avang.live/hls/stream.m3u8", categoria: "Internacional" },
+        { nombre: "B4U Music", url: "https://cdn-2.pishow.tv/live/415/master.m3u8", categoria: "Internacional" },
+        { nombre: "Baraza TV Deep House", url: "https://rtmp.streams.ovh:1936/barazarelax/barazazararelax/barazarelax/playlist.m3u8", categoria: "Dance" },
+        { nombre: "Baraza TV Relaxing", url: "https://rtmp.streams.ovh:1936/barazarelax/barazarelax/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "batteryPOP", url: "https://d24c0gmuazjo9x.cloudfront.net/master.m3u8", categoria: "Internacional" },
+        { nombre: "Beats Radio", url: "https://videostream.shockmedia.com.ar:19360/beatsradio/beatsradio.m3u8", categoria: "Internacional" },
+        { nombre: "Best of Dance TV", url: "https://m1b2.worldcast.tv/dancetelevisionone/dancetelevisionone.m3u8", categoria: "Dance" },
+        { nombre: "Bibel TV Musik", url: "https://bibeltv03.iptv-playoutcenter.de/bibeltv03/bibeltv03.stream_1/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Biography The Icons", url: "https://dkaiai6digij6.cloudfront.net/Lights_Legends_Icons.m3u8", categoria: "Internacional" },
+        { nombre: "BIZ Music", url: "https://fl.biztv.media/music_720_QAKpGmVUjaPApCNjpsgBxrdqNihAkl/index.m3u8", categoria: "Internacional" },
+        { nombre: "Blues TV", url: "https://2-fss-2.streamhoster.com/pl_138/205510-3094608-1/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "BOKTV", url: "https://livestream2.bokradio.co.za/hls/Bok5c.m3u8", categoria: "Internacional" },
+        { nombre: "Bonches Latinos TV", url: "https://5790d294af2dc.streamlock.net/latinostv/latinostv/playlist.m3u8", categoria: "Latino" },
+        { nombre: "BTA TV", url: "https://cloud.fastchannel.es/manifiest/hls/prog9/btatv.m3u8", categoria: "Internacional" },
+        { nombre: "Canal 3 KMK TV", url: "https://live20.bozztv.com/giatv/giatv-KMKTV/KMKTV/chunks.m3u8", categoria: "Internacional" },
+        { nombre: "City TV", url: "https://tv.city.bg/play/tshls/citytv/index.m3u8", categoria: "Internacional" },
+        { nombre: "Company TV", url: "https://5929b138b139d.streamlock.net/CompanyTV/smil:CompanyTV.smil/master.m3u8", categoria: "Internacional" },
+        { nombre: "Conecta TV", url: "https://stream8.mexiserver.com:19360/conectatvx/conectatvx.m3u8", categoria: "Internacional" },
+        { nombre: "Cool FM 98.9", url: "https://live2.tensila.com/cool-v-1.arubara/hls/master.m3u8", categoria: "Internacional" },
+        { nombre: "Dance Moms", url: "https://aegis-cloudfront-1.tubi.video/a9cb26a5-5662-400d-87b2-bd77b3e98295/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "DanceTV Algorhythm", url: "https://m2b2.worldcast.tv:7443/dancetelevisionfour/dancetelevisionfour.m3u8", categoria: "Dance" },
+        { nombre: "DanceTV Deep House District", url: "https://m1b2.worldcast.tv/dancetelevisiontwo/dancetelevisiontwo.m3u8", categoria: "Dance" },
+        { nombre: "DanceTV EDM Mainstage", url: "https://mbit1.worldcast.tv/dancetelevisionseven/multibit.m3u8", categoria: "Dance" },
+        { nombre: "DanceTV House Floor", url: "https://m2b2.worldcast.tv:7443/dancetelevisionfive/dancetelevisionfive.m3u8", categoria: "Dance" },
+        { nombre: "DanceTV Minimal Tech", url: "https://mbit1.worldcast.tv/dancetelevisionsix/multibit.m3u8", categoria: "Dance" },
+        { nombre: "DanceTV Techno Warehouse", url: "https://m2b2.worldcast.tv:7443/dancetelevisionthree/dancetelevisionthree.m3u8", categoria: "Dance" },
+        { nombre: "DASDING 90.8", url: "https://swrdasdingvr-hls.akamaized.net/hls/live/2018681/dasdingvr/master.m3u8", categoria: "Internacional" },
+        { nombre: "Dismar Radio TV", url: "https://rds3.desdeparaguay.net/dismartv/dismartv/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "El Sol Network TV", url: "https://tv.wracanal10.com:3025/live/elsoltvlive.m3u8", categoria: "Internacional" },
+        { nombre: "EnerGeek Radio", url: "https://backend.energeek.cl/webtv/egradioweb/index.m3u8?token=ZZDemoIPTVGH", categoria: "Internacional" },
+        { nombre: "Exitosa TV", url: "https://luna-4-video.mediaserver.digital/exitosatv_233b-4b49-a726-5a451262/index.m3u8", categoria: "Internacional" },
+        { nombre: "Extra TV", url: "https://streaming.social3.hr/ExtraTVudzdhr5/uUankWqpXD/1.m3u8", categoria: "Internacional" },
+        { nombre: "Fabulosa Estéreo 100.5 FM", url: "https://www.streaming507.net:19360/videofabulosa/videofabulosa.m3u8", categoria: "Internacional" },
+        { nombre: "FM Mundo", url: "https://video2.makrodigital.com/fmmundo/fmmundo/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Frecuencia Musical TV", url: "https://s2.tvdatta.com:3307/hybrid/play.m3u8", categoria: "Internacional" },
+        { nombre: "GAMTV.cr", url: "https://v2.azulstream.com:8081/gamtv/gamtv/index.m3u8", categoria: "Internacional" },
+        { nombre: "Gigant FM", url: "https://video.uitzending.tv:19360/gigantfm/gigantfm.m3u8", categoria: "Internacional" },
+        { nombre: "Impact TV Dance", url: "https://online.tvimpact.live/hls/dancetv.m3u8", categoria: "Dance" },
+        { nombre: "Infinita TV", url: "https://s2.tvdatta.com:3753/hybrid/play.m3u8", categoria: "Internacional" },
+        { nombre: "Junior Technologia TV", url: "https://streamunoapp.com:3616/live/juniorrodrigueztvlive.m3u8", categoria: "Internacional" },
+        { nombre: "K POP by CJ ENM", url: "https://d3kmrn2mstrnk5.cloudfront.net/f4acc9ba_daae_4ed0_b836_32126cead919/hls/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Kiss TV", url: "https://tv.broadcasting.ro/kisstv/a629c031-2170-4ee9-a36d-87a891aa3131.m3u8", categoria: "Internacional" },
+        { nombre: "La Kalle", url: "https://mdstrm.com/live-stream-playlist/58d191f07290fbb058025843.m3u8", categoria: "Internacional" },
+        { nombre: "La Morada Radio TV", url: "https://movil.ejeserver.com/live/lamoradatv.m3u8", categoria: "Internacional" },
+        { nombre: "La-X", url: "https://stream.eleden.com/livelax/ngrp:livelax_all/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Latino Channel TV", url: "https://cdn.vegasplus.us/vegas/latch/playlist.m3u8", categoria: "Latino" },
+        { nombre: "Littoral FM", url: "https://live.creacast.com/littoralfm-ch1/stream/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "LRT Opus", url: "https://stream-live.lrt.lt/opus/master.m3u8", categoria: "Internacional" },
+        { nombre: "Madras FM TV", url: "https://edge12.vedge.infomaniak.com/livecast/ik:madrasfmtv/manifest.m3u8", categoria: "Internacional" },
+        { nombre: "Magic TV (1)", url: "https://bss1.neterra.tv/magictv/magictv.m3u8", categoria: "Internacional" },
+        { nombre: "Magic TV (2)", url: "https://tv.broadcasting.ro/magictv/925f90db-5c88-4190-a53d-5163cdffe6f4.m3u8", categoria: "Internacional" },
+        { nombre: "Marina TV", url: "https://ffs.gulfsat.com/Marina-TV-HD/index.m3u8", categoria: "Internacional" },
+        { nombre: "Más FM 95.9", url: "https://vivo.solumedia.com:19360/masfm/masfm.m3u8", categoria: "Internacional" },
+        { nombre: "MasMusica FM", url: "https://movil.ejeserver.com/live/masmusica.m3u8", categoria: "Internacional" },
+        { nombre: "Metropoli Medios TV", url: "https://eu1.servers10.com:8081/8214/index.m3u8", categoria: "Internacional" },
+        { nombre: "MTV Lebanon", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mtv-lebanon/b8ebb2a5affb812f1541712adde10e26/index.m3u8", categoria: "Internacional" },
+        { nombre: "Music India", url: "https://cdn-2.pishow.tv/live/226/master.m3u8", categoria: "Internacional" },
+        { nombre: "Music TV Granada", url: "https://cloudvideo.servers10.com:8081/8032/index.m3u8", categoria: "Internacional" },
+        { nombre: "NEW K-POP", url: "https://newidco-newkid-1-eu.xiaomi.wurl.tv/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "NogoumFMTV", url: "https://nogoumtv.nrpstream.com/hls/stream.m3u8", categoria: "Internacional" },
+        { nombre: "NOW 70s", url: "https://lightning-now70s-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-lightning-now70s-rakuten/CDN/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "NOW 80s", url: "https://lightning-now80s-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-lightning-now80s-rakuten/CDN/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "NOW 90s00s", url: "https://amg01076-amg01076c19-rakuten-gb-8653.playouts.now.amagi.tv/playlist/amg01076-lightning-now90s00s-rakutengb/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "NOW Rock", url: "https://lightning-now90s-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-lightning-now90s-rakuten/CDN/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Now TV 102.3FM Edmonton", url: "https://videostream.jpbgdigital.com/NOWTV.m3u8", categoria: "Internacional" },
+        { nombre: "Nueva Vida TV", url: "https://stream.nuevavidafm.net:3937/live/nuevavidalive.m3u8", categoria: "Internacional" },
+        { nombre: "Number 1 Dance", url: "https://b01c02nl.mediatriple.net/videoonlylive/mtkgeuihrlfwlive/u_stream_5c9e2aa8acf44_1/playlist.m3u8", categoria: "Dance" },
+        { nombre: "Number 1 TV", url: "https://b01c02nl.mediatriple.net/videoonlylive/mtkgeuihrlfwlive/broadcast_5c9e17cd59e8b.smil/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Óčko Expres", url: "https://ocko-live.ssl.cdn.cra.cz/channels/ocko_expres/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "ON FM", url: "https://5ce9406b73c33.streamlock.net/ONFM/livestream/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "PMC Royale", url: "https://pmcrohls.wns.live/hls/stream.m3u8", categoria: "Internacional" },
+        { nombre: "Pop", url: "https://amg01753-narrativeentert-popkids-lggb-xyy5k.amagi.tv/ts-eu-w1-n2/playlist/amg01753-narrativeentert-popkids-lggb/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "POP World TV", url: "https://janus.xpbroadcasting.com:8443/hls/popworld.m3u8", categoria: "Internacional" },
+        { nombre: "Power Dance", url: "https://livetv.powerapp.com.tr/dance/dance.smil/playlist.m3u8", categoria: "Dance" },
+        { nombre: "Power Hit Radio", url: "https://cdnlb.tvplayhome.lt/live/eds/PWR_LTU_Live/GO3_LIVE_HLS/PWR_LTU_Live.m3u8?cdntoken=eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDczNDU2NjEsInBhdGgiOiIvbGl2ZS9lZHMvUFdSX0xUVV9MaXZlL0dPM19MSVZFX0hMUy8iLCJzaXAiOiI3Mi4xMS4xNTcuMTEyIiwiZGV2aWNlX2lkIjoiMCIsInNlc3Npb25faWQiOiIwIiwiY2xpZW50X2lkIjoiMCJ9.oHc5wUgwNPQ-4P7wJy_WvWQh0muFg9Lprhc4STS3cUHi0FI4tAKGdZOOeE-dOhVBHKFUYETmoXSMrrVHOeLC3g", categoria: "Internacional" },
+        { nombre: "Power Love", url: "https://livetv.powerapp.com.tr/plove/love.smil/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Power Türk Akustik", url: "https://livetv.powerapp.com.tr/pturkakustik/akustik.smil/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Power Türk Slow", url: "https://livetv.powerapp.com.tr/pturkslow/slow.smil/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Power Türk Taptaze", url: "https://livetv.powerapp.com.tr/pturktaptaze/taptaze.smil/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Conexion Web TV", url: "https://tuvideoonline.com.ar:3391/live/radioconexionlive.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Freccia TV", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S3160845/0tuSetc8UFkF/playlist_video.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Hit FM TV", url: "https://peer2.tdiradio.com/static/streaming-playlists/hls/bab99862-ec1c-474f-9a02-4f8c8677d565/0.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Ideal 104.7 FM", url: "https://www.idealfm104-7.com/hls/0/stream.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Imagen 105.1 FM", url: "https://streaming.imagenfm105-1.com/hls/stream.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Javan TV", url: "https://rjtvhls.wns.live/hls/stream.m3u8", categoria: "Internacional" },
+        { nombre: "Radio JND", url: "https://radiojnd.cdn.hostin.cc/radiojnd/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Karolina TV", url: "https://peer2.tdiradio.com/static/streaming-playlists/hls/4207de1d-52e8-4591-ad9e-218069b864d1/0.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Lola", url: "https://peer2.tdiradio.com/static/streaming-playlists/hls/7c3ea8d3-49dc-4e1b-8b1e-dc6fab71f5cf/0.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Master", url: "https://videoserver.tmcreativos.com:19360/radiomaster/radiomaster.m3u8", categoria: "Internacional" },
+        { nombre: "Radio RAM", url: "https://1888165924.rsc.cdn77.org/live/RadioRAM/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Realpolitik", url: "https://vivo.solumedia.com:19360/realpolitik/realpolitik.m3u8", categoria: "Internacional" },
+        { nombre: "Radio SWH TV", url: "https://00ff00.latnet.media/edge/swh_tv.smil/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Télé Hit", url: "https://59d39900ebfb8.streamlock.net/RadioTelehit/RadioTelehit/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Weser TV Bremen", url: "https://5857499ee635b.streamlock.net/radiowesertv-live/_definst_/mp4:livestreamTV/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Zeta TV", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S9346184/XEx1LqlYbNic/playlist_video.m3u8", categoria: "Internacional" },
+        { nombre: "Real Housewives Vault", url: "https://xumo-xumoent-vc-123-8gq0q.fast.nbcuni.com/live/master.m3u8", categoria: "Internacional" },
+        { nombre: "Rock TV", url: "https://tv.broadcasting.ro/rocktv/85c83a80-4f71-4f2d-a8d6-43f676896bcb.m3u8", categoria: "Internacional" },
+        { nombre: "Salsa Gorda Television", url: "https://live20.bozztv.com/akamaissh101/ssh101/qMUAZEy/playlist.m3u8", categoria: "Latino" },
+        { nombre: "Sony One Hits Comedie", url: "https://7aa9671895264ec9a384dfed1b992171.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-818-FR-SONYONEHITSCOMDIE-LG_FR/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "SOY Plancha TV", url: "https://59ef525c24caa.streamlock.net/vmtv/soyplancha/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Stingray Classic Rock", url: "https://lotus.stingray.com/manifest/ose-101ads-montreal/samsungtvplus/master.m3u8", categoria: "Internacional" },
+        { nombre: "Stingray Flashback 70s", url: "https://lotus.stingray.com/manifest/ose-115ads-montreal/samsungtvplus/master.m3u8", categoria: "Internacional" },
+        { nombre: "Stingray Greatest Holiday Hits", url: "https://d39g1vxj2ef6in.cloudfront.net/v1/manifest/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod-rakuten-stitched/54947915-6504-4548-aaef-eabd451f8607/1.m3u8", categoria: "Internacional" },
+        { nombre: "Stingray Hit List", url: "https://lotus.stingray.com/manifest/ose-107ads-montreal/samsungtvplus/master.m3u8", categoria: "Internacional" },
+        { nombre: "Supermúsica TV", url: "https://backupmaxmedia.hvmultiplay.com/hls/stream4/supermusica.m3u8", categoria: "Internacional" },
+        { nombre: "Tele Dominicana TV", url: "https://vdopanel.jlahozconsulting.com/p/3417/hybrid/play.m3u8", categoria: "Internacional" },
+        { nombre: "Televisión Tarapoto", url: "https://ott1.hdlatam.tv/live_abr/webtvTarapotoPe/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Topical Moon RD", url: "https://sistemastr.tropicalmoonmedia.com/live/56BE17DB16EB76C9F2DDB8346F4DFA4E/30.m3u8", categoria: "Internacional" },
+        { nombre: "Totalmusic", url: "https://cdn.global.elektamedia.com/live/c7eds/Totalmusic/SA_LIVE_hls_enc/master.m3u8", categoria: "Internacional" },
+        { nombre: "Totalmusic 80s", url: "https://cdn.global.elektamedia.com/live/c7eds/Totalmusic_80s/SA_LIVE_hls_enc/master.m3u8", categoria: "Internacional" },
+        { nombre: "Totalmusic 2000s", url: "https://cdn.global.elektamedia.com/live/c7eds/Totalmusic_00s/SA_LIVE_hls_enc/master.m3u8", categoria: "Internacional" },
+        { nombre: "Totalmusic Concerts", url: "https://cdn.global.elektamedia.com/live/c7eds/Totalmusic_Concerts/SA_LIVE_hls_enc/master.m3u8", categoria: "Internacional" },
+        { nombre: "Totalmusic Dance", url: "https://cdn.global.elektamedia.com/live/c7eds/Totalmusic_Dance/SA_LIVE_hls_enc/master.m3u8", categoria: "Dance" },
+        { nombre: "Tropi Q 99.7 FM", url: "https://www.streaming507.net:19360/videotropiq/videotropiq.m3u8", categoria: "Internacional" },
+        { nombre: "TVS Music Network", url: "https://rpn.bozztv.com/gusa/gusa-tvsmusic/index.m3u8", categoria: "Internacional" },
+        { nombre: "TVUNO", url: "https://streamtv.onliv3.online:1936/karibtv/karibtv/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vantage Dance", url: "https://hls.vantagetv.ee/vdance_stream/main_stream.m3u8", categoria: "Dance" },
+        { nombre: "Vantage Music", url: "https://hls.vantagetv.ee/vmusic_stream/main_stream.m3u8", categoria: "Internacional" },
+        { nombre: "Vantage Rock", url: "https://hls.vantagetv.ee/vrock_stream/index.m3u8", categoria: "Internacional" },
+        { nombre: "Venus Media", url: "https://rds3gen.desdeparaguay.net/venusmedia/venusmedia/.m3u8", categoria: "Latino" },
+        { nombre: "Vevo 2K", url: "https://d1s6jz7jeei17.cloudfront.net/playlist/amg00056-vevotv-vevo2kau-samsungau/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vevo 70s", url: "https://amg00056-vevotv-vevo70saunz-samsungau-xzszd.amagi.tv/playlist/amg00056-vevotv-vevo70saunz-samsungau/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vevo 80s", url: "https://amg00056-vevotv-vevo80saunz-samsungau-rp5e3.amagi.tv/playlist/amg00056-vevotv-vevo80saunz-samsungau/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vevo 90s", url: "https://amg00056-vevotv-vevo90saunz-samsungau-n6a0d.amagi.tv/playlist/amg00056-vevotv-vevo90saunz-samsungau/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vevo Country", url: "https://amg00056-vevotv-vevocountryau-samsungau-ktmqm.amagi.tv/playlist/amg00056-vevotv-vevocountryau-samsungau/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vevo Latino", url: "https://amg00056-amg00056c13-rakuten-es-3246.playouts.now.amagi.tv/playlist.m3u8", categoria: "Latino" },
+        { nombre: "Vevo Pop", url: "https://d128y56w6v2kax.cloudfront.net/playlist/amg00056-vevotv-vevopopau-samsungau/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vevo Pop Italy", url: "https://amg00056-amg00056c8-rakuten-it-3239.playouts.now.amagi.tv/playlist.m3u8", categoria: "Italia" },
+        { nombre: "Vevo Pop Spain", url: "https://amg00056-amg00056c10-rakuten-es-3242.playouts.now.amagi.tv/playlist.m3u8", categoria: "España" },
+        { nombre: "Vevo Retro Rock", url: "https://d2lyea6if8kkz9.cloudfront.net/playlist/amg00056-vevotv-vevoretrorockau-samsungau/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vintage Music", url: "https://59ef525c24caa.streamlock.net/vmtv/tvvintage/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Visión Televisión", url: "https://cloudvideo.servers10.com:8081/8016/index.m3u8", categoria: "Internacional" },
+        { nombre: "VIVA Russia", url: "https://live20.bozztv.com/akamaissh101/ssh101/vivarussia/chunks.m3u8", categoria: "Internacional" },
+        { nombre: "VoiceOver Radio TV", url: "https://cloudvideo.servers10.com:8081/8198/index.m3u8", categoria: "Internacional" },
+        { nombre: "XITE Siempre Latino (1)", url: "https://d1xc25jm9e0l4b.cloudfront.net/XITE_Siempre_Latino.m3u8", categoria: "Latino" },
+        { nombre: "XITE Siempre Latino (2)", url: "https://d1xc25jm9e0l4b.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-xplkt8i7m24dc/XITE_Siempre_Latino.m3u8", categoria: "Latino" },
+        { nombre: "Little House on the Prairie", url: "https://xumo-xumoent-vc-121-ghge7.fast.nbcuni.com/live/master.m3u8", categoria: "Internacional" },
+        { nombre: "Radio Italia Trend", url: "https://amg00745-radioitailaspa-radioitalia-rakuten-sucsc.amagi.tv/hls/amagi_hls_data_rakutenAA-radioitalia-rakuten/CDN/master.m3u8", categoria: "Italia" },
+        { nombre: "MBC America", url: "https://cdn-us-east-prod-ingest-infra-dacast-com.akamaized.net/624ff8f9-db18-da92-4d42-896fa2ff3eb3/source/index.m3u8", categoria: "Internacional" },
+        { nombre: "RTL 102.5 Best", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S76960628/OEPHRUIctA0M/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "RTL 102.5 Bro&Sis", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S75007890/MUGHuxc9dQ3b/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "RTL 102.5 Caliente", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S8448465/zTYa1Z5Op9ue/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "RTL 102.5 Disco", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S51100361/0Fb4R3k82b5Z/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "RTL 102.5 Napulè", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S27134503/0f9AhuwKlhnZ/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "RTL 102.5 Traffic", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S38122967/2lyQRIAAGgRR/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "RTL 102.5 TV", url: "https://dd782ed59e2a4e86aabf6fc508674b59.msvdn.net/live/S97044836/tbbP8T1ZRPBL/playlist_video.m3u8", categoria: "Italia" },
+        { nombre: "RTL Gold", url: "https://stream.rtl.lu/data/live/tele/rtlgold/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "RTL Today Radio", url: "https://stream.rtl.lu/data/live/tele/rtltodayradio/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Vevo Pop Germany", url: "https://amg00056-amg00056c7-rakuten-de-3245.playouts.now.amagi.tv/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "XITE Hits Germany", url: "https://d726x48n2pd5h.cloudfront.net/v1/master/3722c60a815c199d9c0ef36c5b73da68a62b09d1/cc-skxr1pazhltvp/XITE_Hits.m3u8", categoria: "Internacional" },
+        { nombre: "CBS 3 Omaha NE (KMTV)", url: "https://aegis-cloudfront-1.tubi.video/0b16cabe-a8fd-4d91-99e5-3efb7aa740cc/playlist.m3u8", categoria: "Internacional" },
+        { nombre: "Latina (1)", url: "https://redirector.rudo.video/hls-video/567ffde3fa319fadf3419efda25619456231dfea/latina/latina.smil/playlist.m3u8", categoria: "Latino" },
+        { nombre: "Latina Clasicos", url: "https://redirector.rudo.video/hls-video/plus226/latina2/latina2.smil/playlist.m3u8", categoria: "Latino" },
+        { nombre: "Latina TV (1)", url: "https://streamtv.latinamedios.com:3413/live/latinatvlive.m3u8", categoria: "Latino" },
+        { nombre: "Latina TV Internacional", url: "https://5790d294af2dc.streamlock.net/latinatv/latinatv/chunklist.m3u8", categoria: "Latino" },
+        { nombre: "Prensa Latina TV", url: "https://eu1.servers10.com:8081/8192/index.m3u8", categoria: "Internacional" },
+        { nombre: "Trace Latina", url: "https://amg01131-tracetv-tracelatina-glewed-vtnk7.amagi.tv/playlist.m3u8", categoria: "Latino" },
+        { nombre: "XITE Hits UK", url: "https://amg01243-xitenetworksint-hitsuk-samsunguk-mvovq.amagi.tv/playlist/amg01243-xitenetworksint-hitsuk-samsunguk/playlist.m3u8", categoria: "Internacional" }
+    ];
+
+    // =======================================================================
+    // 3. VARIABLES GLOBALES
+    // =======================================================================
+    let hlsPlayer = null;
+    let canalActualIndex = 0;
+    let canalesFiltradosActual = [];
+    let notas = [];
+    let config = { token: '', gistId: '' };
+
+    // =======================================================================
+    // 4. FUNCIONES TV
+    // =======================================================================
+    function filtrarCanalesTV() {
+        const categoria = document.getElementById('tvCategory').value;
+        const select = document.getElementById('tvChannel');
+        if (categoria !== "Todos") {
+            canalesFiltradosActual = canalesTV.filter(c => c.categoria === categoria);
+        } else {
+            canalesFiltradosActual = [...canalesTV];
+        }
+        select.innerHTML = '<option value="">-- Selecciona un canal --</option>' + 
+            canalesFiltradosActual.map((c, i) => `<option value="${i}">${c.nombre}</option>`).join('');
+    }
+
+    function cambiarCanalPorSelect() {
+        const index = document.getElementById('tvChannel').value;
+        if (index === "") return;
+        canalActualIndex = parseInt(index);
+        const canal = canalesFiltradosActual[canalActualIndex];
+        reproducirCanal(canal);
+    }
+
+    function reproducirCanal(canal) {
+        const video = document.getElementById('tvPlayer');
+        if (hlsPlayer) hlsPlayer.destroy();
+        if (canal.url.includes('.m3u8') && Hls.isSupported()) {
+            hlsPlayer = new Hls();
+            hlsPlayer.loadSource(canal.url);
+            hlsPlayer.attachMedia(video);
+            hlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+        } else {
+            video.src = canal.url;
+            video.play();
+        }
+        document.getElementById('nowPlayingTV').innerHTML = `🎵 Reproduciendo: ${canal.nombre}`;
+        document.getElementById('tvChannel').value = canalActualIndex;
+        mostrarStatus(`📺 Reproduciendo: ${canal.nombre}`, 'success');
+    }
+
+    function siguienteCanal() {
+        if (canalesFiltradosActual.length === 0) return;
+        canalActualIndex = (canalActualIndex + 1) % canalesFiltradosActual.length;
+        reproducirCanal(canalesFiltradosActual[canalActualIndex]);
+    }
+    
+    function anteriorCanal() {
+        if (canalesFiltradosActual.length === 0) return;
+        canalActualIndex = (canalActualIndex - 1 + canalesFiltradosActual.length) % canalesFiltradosActual.length;
+        reproducirCanal(canalesFiltradosActual[canalActualIndex]);
+    }
+
+    function detenerTV() {
+        if (hlsPlayer) hlsPlayer.destroy();
+        const video = document.getElementById('tvPlayer');
+        video.pause();
+        video.src = '';
+        document.getElementById('nowPlayingTV').innerHTML = '⏹️ Reproducción detenida';
+    }
+
+    // =======================================================================
+    // 5. GESTOS TÁCTILES (MEJORADOS)
+    // =======================================================================
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchCurrentX = 0;
+    let touchCurrentY = 0;
+    let isSwiping = false;
+    const SWIPE_THRESHOLD = 30;
+
+    const videoContainer = document.getElementById('tvPlayer');
+
+    videoContainer.addEventListener('touchstart', function(e) {
+        const touch = e.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        touchCurrentX = touchStartX;
+        touchCurrentY = touchStartY;
+        isSwiping = false;
+    }, { passive: true });
+
+    videoContainer.addEventListener('touchmove', function(e) {
+        if (e.touches.length !== 1) return;
+        const touch = e.touches[0];
+        touchCurrentX = touch.clientX;
+        touchCurrentY = touch.clientY;
+        
+        const deltaX = touchCurrentX - touchStartX;
+        const deltaY = touchCurrentY - touchStartY;
+        const absDx = Math.abs(deltaX);
+        const absDy = Math.abs(deltaY);
+        
+        if (absDx > SWIPE_THRESHOLD || absDy > SWIPE_THRESHOLD) {
+            e.preventDefault();
+            isSwiping = true;
+        }
+    }, { passive: false });
+
+    videoContainer.addEventListener('touchend', function(e) {
+        if (!isSwiping) return;
+        
+        const deltaX = touchCurrentX - touchStartX;
+        const deltaY = touchCurrentY - touchStartY;
+        const absDx = Math.abs(deltaX);
+        const absDy = Math.abs(deltaY);
+        
+        if (absDx > absDy) {
+            if (deltaX > 0) {
+                siguienteCanal();
+            } else {
+                anteriorCanal();
+            }
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(30);
+            }
+        } else if (absDy > absDx) {
+            const video = document.getElementById('tvPlayer');
+            if (!video) return;
+            const step = 0.1;
+            const deltaVol = -deltaY / 50 * step;
+            let newVol = video.volume + deltaVol;
+            newVol = Math.min(1, Math.max(0, newVol));
+            video.volume = newVol;
+            mostrarStatus(`🔊 Volumen: ${Math.round(newVol * 100)}%`, 'info');
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(20);
+            }
+        }
+        
+        isSwiping = false;
+    }, { passive: true });
+
+    // =======================================================================
+    // 6. FUNCIONES GITHUB (CON PREFIJO Y ARCHIVO POR PERFIL)
+    // =======================================================================
+    async function subirAGitHub() {
+        const tokenInput = document.getElementById('githubToken').value.trim();
+        const gistInput = document.getElementById('gistId').value.trim();
+        if (!tokenInput) { mostrarStatus('❌ Token requerido', 'error'); return; }
+        
+        config.token = tokenInput;
+        config.gistId = gistInput;
+        localStorage.setItem(prefijo + 'github_token', tokenInput);
+        if (gistInput) localStorage.setItem(prefijo + 'github_gist_id', gistInput);
+
+        const nombreArchivo = perfilActual ? `notas_${perfilActual}.json` : 'notas.json';
+        const data = {
+            description: 'Mis notas',
+            public: false,
+            files: {
+                [nombreArchivo]: { content: JSON.stringify(notas, null, 2) }
+            }
+        };
+        
+        actualizarSyncStatus('syncing');
+        try {
+            let url = 'https://api.github.com/gists', method = 'POST';
+            if (config.gistId) { url = `https://api.github.com/gists/${config.gistId}`; method = 'PATCH'; }
+            const response = await fetch(url, {
+                method,
+                headers: { 'Authorization': `token ${config.token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                if (!config.gistId && result.id) {
+                    config.gistId = result.id;
+                    localStorage.setItem(prefijo + 'github_gist_id', result.id);
+                    document.getElementById('gistId').value = result.id;
+                }
+                actualizarSyncStatus('synced');
+                mostrarStatus('✅ Subido a GitHub', 'success');
+            } else {
+                throw new Error(result.message);
+            }
+        } catch (error) {
+            actualizarSyncStatus('error');
+            mostrarStatus('❌ Error al subir: ' + error.message, 'error');
+        }
+    }
+
+    async function sincronizarDesdeGitHub() {
+        const tokenInput = document.getElementById('githubToken').value.trim();
+        const gistInput = document.getElementById('gistId').value.trim();
+        if (!tokenInput || !gistInput) {
+            mostrarStatus('❌ Configura GitHub (token y gist)', 'error');
+            return;
+        }
+        
+        config.token = tokenInput;
+        config.gistId = gistInput;
+        localStorage.setItem(prefijo + 'github_token', tokenInput);
+        localStorage.setItem(prefijo + 'github_gist_id', gistInput);
+
+        actualizarSyncStatus('syncing');
+        try {
+            const response = await fetch(`https://api.github.com/gists/${config.gistId}`, {
+                headers: { 'Authorization': `token ${config.token}` }
+            });
+            if (response.ok) {
+                const gist = await response.json();
+                const nombreArchivo = perfilActual ? `notas_${perfilActual}.json` : 'notas.json';
+                const notasContent = gist.files[nombreArchivo]?.content;
+                if (notasContent) {
+                    const notasNube = JSON.parse(notasContent);
+                    const idsExistentes = new Set(notas.map(n => n.id));
+                    const nuevas = notasNube.filter(n => !idsExistentes.has(n.id));
+                    if (nuevas.length > 0) {
+                        notas = [...nuevas, ...notas];
+                        guardarNotasLocales();
+                        mostrarNotas();
+                        mostrarStatus(`🔄 ${nuevas.length} notas nuevas`, 'success');
+                    } else {
+                        actualizarSyncStatus('synced');
+                        mostrarStatus('✅ Ya sincronizado', 'success');
+                    }
+                } else {
+                    notas = [];
+                    guardarNotasLocales();
+                    mostrarNotas();
+                    mostrarStatus('📄 Archivo no encontrado, se creará al subir', 'info');
+                }
+            } else {
+                throw new Error('Error al obtener el gist');
+            }
+        } catch (error) {
+            actualizarSyncStatus('error');
+            mostrarStatus('❌ Error al sincronizar', 'error');
+        }
+    }
+
+    // =======================================================================
+    // 7. FUNCIONES DEL BLOC (adaptadas con prefijo)
+    // =======================================================================
+    function toggleModoOscuro() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem(prefijo + 'modo_oscuro', document.body.classList.contains('dark-mode'));
+        mostrarStatus(
+            document.body.classList.contains('dark-mode') ? '🌙 Modo oscuro activado' : '☀️ Modo claro activado',
+            'info'
+        );
+    }
+
+    function cargarModoOscuro() {
+        if (localStorage.getItem(prefijo + 'modo_oscuro') === 'true') {
+            document.body.classList.add('dark-mode');
+        }
+    }
+
+    function cargarParametrosURL() {
+        const urlToken = getParam('token');
+        const urlGist = getParam('gist');
+        if (urlToken) {
+            document.getElementById('githubToken').value = urlToken;
+            config.token = urlToken;
+            localStorage.setItem(prefijo + 'github_token', urlToken);
+            mostrarStatus('✅ Token cargado desde enlace', 'success');
+        }
+        if (urlGist) {
+            document.getElementById('gistId').value = urlGist;
+            config.gistId = urlGist;
+            localStorage.setItem(prefijo + 'github_gist_id', urlGist);
+            mostrarStatus('✅ Gist cargado desde enlace', 'success');
+        }
+        if (urlToken || urlGist) {
+            guardarConfiguracion();
+        }
+    }
+
+    async function subirImagen() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.style.display = 'none';
+        
+        input.onchange = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            mostrarStatus('📤 Subiendo imagen a Imgur...', 'info');
+            
+            if (file.size > 10 * 1024 * 1024) {
+                mostrarStatus('❌ La imagen es muy grande (máx 10MB)', 'error');
+                document.body.removeChild(input);
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            try {
+                const response = await fetch('https://api.imgur.com/3/image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Client-ID 546c25a59c58ad7'
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    const imageUrl = data.data.link;
+                    const textarea = document.getElementById('contenido');
+                    textarea.value += `\n📸 Imagen:\n${imageUrl}\n`;
+                    mostrarStatus('✅ Imagen subida a Imgur', 'success');
+                } else {
+                    mostrarStatus('❌ Error al subir la imagen', 'error');
+                }
+            } catch (error) {
+                mostrarStatus('❌ Error de conexión con Imgur', 'error');
+            }
+            
+            document.body.removeChild(input);
+        };
+        
+        document.body.appendChild(input);
+        input.click();
+    }
+
+    function convertirContenido(texto) {
+        texto = texto.replace(/(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/g, (match, p1, p2, p3, id) => {
+            const url = `https://www.youtube.com/watch?v=${id}`;
+            const miniatura = `https://img.youtube.com/vi/${id}/mqdefault.jpg`;
+            return `<div style="margin: 10px 0; text-align: center;">
+                        <a href="${url}" target="_blank" rel="noopener noreferrer">
+                            <img src="${miniatura}" alt="Miniatura" style="max-width: 100%; border-radius: 10px;">
+                        </a>
+                        <div><a href="${url}" target="_blank">🎬 Ver video en YouTube</a></div>
+                    </div>`;
+        });
+
+        texto = texto.replace(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp)(\?[^\s]*)?)/gi, (url) => {
+            let urlLimpia = url.split('?')[0];
+            return `<div style="margin: 10px 0; text-align: center;">
+                        <img src="${urlLimpia}" alt="imagen" style="max-width: 100%; border-radius: 10px;" onerror="this.style.display='none'">
+                        <div><a href="${url}" target="_blank">🔗 ${url}</a></div>
+                    </div>`;
+        });
+
+        texto = texto.replace(/(https?:\/\/[^\s]+)/g, (url) => {
+            if (url.includes('youtube.com') || url.includes('youtu.be') || url.match(/\.(jpg|jpeg|png|gif|webp)/i)) return url;
+            return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+        });
+
+        texto = texto.replace(/\n/g, '<br>');
+        return texto;
+    }
+
+    function exportarHTML() {
+        if (notas.length === 0) {
+            mostrarStatus('❌ No hay notas para exportar', 'error');
+            return;
+        }
+        let contenido = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Mis Notas</title><style>body{font-family:Arial;margin:40px;} .nota{border:1px solid #ddd;border-radius:10px;padding:15px;margin-bottom:20px;} img{max-width:100%;border-radius:10px;}</style></head><body><h1>📝 Mis Notas</h1><div>Exportado el: ${new Date().toLocaleString()}</div><hr>`;
+        
+        notas.forEach(n => {
+            let contenidoNota = escapeHtml(n.contenido);
+            contenidoNota = contenidoNota.replace(/(https?:\/\/[^\s]+\.(jpg|jpeg|png|gif|webp))/gi, url => `<img src="${url}"><br><a href="${url}">🔗 ${url}</a>`);
+            contenidoNota = contenidoNota.replace(/(https?:\/\/[^\s]+)/g, url => `<a href="${url}" target="_blank">${url}</a>`);
+            contenidoNota = contenidoNota.replace(/\n/g, '<br>');
+            contenido += `<div class="nota"><h3>${escapeHtml(n.titulo)}</h3><div>${contenidoNota}</div><div>📅 ${n.fecha}</div></div>`;
+        });
+        
+        contenido += `<hr><div>Generado desde Bloc de Notas Cloud + TV Online</div></body></html>`;
+        const blob = new Blob([contenido], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `mis_notas_${new Date().toISOString().slice(0,19).replace(/:/g, '-')}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        mostrarStatus('✅ Archivo HTML generado', 'success');
+    }
+
+    function pegarYCerrar() {
+        navigator.clipboard.readText().then(texto => {
+            if (texto && texto.trim() !== '') {
+                document.getElementById('contenido').value = texto;
+                guardarNota();
+                setTimeout(() => window.close(), 500);
+            } else mostrarStatus('❌ No hay nada copiado', 'error');
+        }).catch(() => mostrarStatus('❌ No se pudo leer el portapapeles', 'error'));
+    }
+
+    function cerrarVentana() { if (confirm('¿Cerrar esta pestaña?')) window.close(); }
+
+    function cargarConfiguracion() {
+        cargarParametrosURL();
+        const savedToken = localStorage.getItem(prefijo + 'github_token');
+        const savedGistId = localStorage.getItem(prefijo + 'github_gist_id');
+        if (savedToken && !config.token) {
+            document.getElementById('githubToken').value = savedToken;
+            config.token = savedToken;
+        }
+        if (savedGistId && !config.gistId) {
+            document.getElementById('gistId').value = savedGistId;
+            config.gistId = savedGistId;
+        }
+        cargarNotasLocales();
+        if (config.token && config.gistId) {
+            setTimeout(() => sincronizarDesdeGitHub(), 500);
+        }
+        cargarModoOscuro();
+    }
+
+    function guardarConfiguracion() {
+        const token = document.getElementById('githubToken').value;
+        const gist = document.getElementById('gistId').value;
+        config.token = token;
+        config.gistId = gist;
+        if (token) localStorage.setItem(prefijo + 'github_token', token);
+        if (gist) localStorage.setItem(prefijo + 'github_gist_id', gist);
+        mostrarStatus('✅ Configuración guardada', 'success');
+    }
+
+    function cargarNotasLocales() {
+        const notasGuardadas = localStorage.getItem(prefijo + 'blocNotas');
+        if (notasGuardadas) {
+            notas = JSON.parse(notasGuardadas);
+            mostrarNotas();
+        }
+    }
+
+    function guardarNota() {
+        const titulo = document.getElementById('titulo').value;
+        const contenido = document.getElementById('contenido').value;
+        if (!titulo && !contenido) {
+            mostrarStatus('📝 Escribe algo', 'error');
+            return;
+        }
+        
+        const nota = { 
+            id: Date.now(), 
+            titulo: titulo || 'Sin título', 
+            contenido: contenido, 
+            fecha: new Date().toLocaleString(), 
+            timestamp: Date.now() 
+        };
+        notas.unshift(nota);
+        guardarNotasLocales();
+        document.getElementById('titulo').value = '';
+        document.getElementById('contenido').value = '';
+        mostrarNotas();
+        actualizarSyncStatus('local');
+        mostrarStatus('✅ Nota guardada', 'success');
+        
+        if (config.token && config.gistId) {
+            subirAGitHub();
+        }
+    }
+
+    function guardarNotasLocales() {
+        localStorage.setItem(prefijo + 'blocNotas', JSON.stringify(notas));
+    }
+    
+    function eliminarNota(id) { 
+        if (confirm('¿Eliminar esta nota?')) { 
+            notas = notas.filter(n => n.id !== id); 
+            guardarNotasLocales(); 
+            mostrarNotas(); 
+            actualizarSyncStatus('local'); 
+            mostrarStatus('🗑️ Nota eliminada', 'info'); 
+            if (config.token && config.gistId) subirAGitHub(); 
+        } 
+    }
+
+    function mostrarNotas() {
+        const container = document.getElementById('notas-container');
+        if (notas.length === 0) { 
+            container.innerHTML = '<div class="empty-state">✨ No hay notas. ¡Crea tu primera nota!</div>'; 
+            return; 
+        }
+        container.innerHTML = notas.map(nota => 
+            `<div class="nota-card">
+                <div class="nota-titulo">📌 ${escapeHtml(nota.titulo)}</div>
+                <div class="nota-contenido">${convertirContenido(escapeHtml(nota.contenido))}</div>
+                <div class="nota-fecha">📅 ${nota.fecha}</div>
+                <button class="btn-eliminar" onclick="eliminarNota(${nota.id})">🗑️ Eliminar</button>
+            </div>`
+        ).join('');
+    }
+
+    function mostrarStatus(mensaje, tipo) {
+        const statusDiv = document.getElementById('statusMessage');
+        statusDiv.textContent = mensaje;
+        statusDiv.className = `status ${tipo || 'info'}`;
+        setTimeout(() => { 
+            if (statusDiv.className.includes(tipo)) { 
+                statusDiv.className = 'status info'; 
+                statusDiv.textContent = '✅ Listo'; 
+            } 
+        }, 3000);
+    }
+
+    function actualizarSyncStatus(estado) {
+        const dot = document.getElementById('syncDot');
+        const status = document.getElementById('syncStatus');
+        switch(estado) {
+            case 'syncing': dot.className = 'sync-dot syncing'; status.textContent = 'Sincronizando...'; break;
+            case 'synced': dot.className = 'sync-dot'; dot.style.background = '#28a745'; status.textContent = 'Sincronizado ☁️'; break;
+            case 'local': dot.className = 'sync-dot'; dot.style.background = '#ffc107'; status.textContent = 'Solo local 💾'; break;
+            case 'error': dot.className = 'sync-dot'; dot.style.background = '#dc3545'; status.textContent = 'Error'; break;
+        }
+    }
+
+    function escapeHtml(text) { 
+        const div = document.createElement('div'); 
+        div.textContent = text; 
+        return div.innerHTML; 
+    }
+
+    // =======================================================================
+    // 8. FUNCIÓN RADIO (AQUÍ PONES TU URL)
+    // =======================================================================
+    function abrirRadio() {
+        // ====== CAMBIA LA SIGUIENTE URL POR LA TUYA ======
+        const urlRadio = "https://cchispa126-tech.github.io/radiodigital/"; // <--- PON AQUÍ TU URL
+        window.open(urlRadio, '_blank');
+    }
+
+    // =======================================================================
+    // 9. TECLADO (izquierda/derecha = canal, arriba/abajo = volumen)
+    // =======================================================================
+    const videoElement = document.getElementById('tvPlayer');
+    videoElement.addEventListener('keydown', function(e) {
+        if (e.key.startsWith('Arrow')) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        switch (e.key) {
+            case 'ArrowLeft': anteriorCanal(); break;
+            case 'ArrowRight': siguienteCanal(); break;
+            case 'ArrowUp': cambiarVolumen(0.1); break;
+            case 'ArrowDown': cambiarVolumen(-0.1); break;
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            guardarNota();
+        }
+        if (e.key >= '1' && e.key <= '9') {
+            const index = parseInt(e.key) - 1;
+            if (index < canalesFiltradosActual.length) {
+                e.preventDefault();
+                reproducirCanal(canalesFiltradosActual[index]);
+            }
+        }
+    });
+
+    function cambiarVolumen(step) {
+        const video = document.getElementById('tvPlayer');
+        if (!video) return;
+        let newVol = video.volume + step;
+        newVol = Math.min(1, Math.max(0, newVol));
+        video.volume = newVol;
+        mostrarStatus(`🔊 Volumen: ${Math.round(newVol * 100)}%`, 'info');
+    }
+
+    // =======================================================================
+    // 10. INICIALIZACIÓN (con sincronización automática cada 30s)
+    // =======================================================================
+    setTimeout(() => {
+        const indicador = document.getElementById('gestoIndicator');
+        if (indicador) indicador.style.opacity = '0.5';
+    }, 5000);
+
+    function init() {
+        const categorias = ["Todos", ...new Set(canalesTV.map(c => c.categoria))];
+        const catSelect = document.getElementById('tvCategory');
+        catSelect.innerHTML = categorias.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        filtrarCanalesTV();
+        cargarConfiguracion();
+
+        setInterval(() => {
+            if (config.token && config.gistId) {
+                sincronizarDesdeGitHub();
+            }
+        }, 30000);
+    }
+
+    init();
+</script>
+</body>
+</html>
